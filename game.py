@@ -1,9 +1,6 @@
 import pygame, sys, random
 from pygame.math import Vector2
 
-
-
-
 class SNAKE:
     def __init__(self):
         self.body = [Vector2(5,10),Vector2(4,10), Vector2(3,10)]
@@ -37,6 +34,7 @@ class SNAKE:
 
     def add_block(self):
         self.new_block = True
+
 class FRUIT:
     def __init__(self):
         self.randomize()
@@ -139,9 +137,6 @@ while True:
 
             if event.key == pygame.K_SPACE:
                 paused = not paused
-
-
-
 
     # Change color of surface
     screen.fill((175, 215, 70))
