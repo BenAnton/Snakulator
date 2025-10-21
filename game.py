@@ -9,7 +9,7 @@ def load_resize_sprite(name):
 class SNAKE:
     def __init__(self):
         self.body = [Vector2(5,10),Vector2(4,10), Vector2(3,10)]
-        self.direction = Vector2(1,0)
+        self.direction = Vector2(0,0)
         self.new_block = False
 
         self.head_up = load_resize_sprite('head_up.png')
@@ -97,19 +97,31 @@ class SNAKE:
     def add_block(self):
         self.new_block = True
 
+    def reset(self):
+        self.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
+        self.direction = Vector2(0, 0)
+
 class FRUIT:
     def __init__(self):
         self.randomize()
 
     def draw_fruit(self):
+        game_font_small = pygame.font.Font(None, 25)
         fruit_rect = pygame.Rect(self.pos.x * cell_size, self.pos.y * cell_size, cell_size, cell_size)
         # pygame.draw.rect(screen, (126, 166, 114), fruit_rect)
         screen.blit(apple, fruit_rect)
+        number_surface = game_font_small.render(str(99), True, (255, 255, 255))
+        number_rect = number_surface.get_rect(center=fruit_rect.center)
+        number_rect.y += 5
+        screen.blit(number_surface, number_rect)
+
 
     def randomize(self):
         self.x = random.randint(0, cell_number -1)
         self.y = random.randint(0, cell_number -1)
         self.pos = Vector2(self.x, self.y)
+
+
 
 class MAIN:
     def __init__(self):
@@ -122,13 +134,19 @@ class MAIN:
         self.check_fail()
 
     def draw_elements(self):
+        self.draw_grass()
         self.snake.draw_snake()
         self.fruit.draw_fruit()
+        self.draw_score()
 
     def check_collision(self):
         if self.fruit.pos == self.snake.body[0]:
             self.fruit.randomize()
             self.snake.add_block()
+
+        for block in self.snake.body[1:]:
+            if block == self.fruit.pos:
+                self.fruit.randomize()
 
     def check_fail(self):
         if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
@@ -139,8 +157,30 @@ class MAIN:
                 self.game_over()
 
     def game_over(self):
-        pygame.quit()
-        sys.exit()
+        self.snake.reset()
+
+    def draw_grass(self):
+        grass_color = (155, 195, 50)
+        for row in range(cell_number):
+            if row % 2 == 0:
+                for col in range(cell_number):
+                    if col % 2 == 0:
+                            grass_rect = pygame.Rect(col * cell_size, row * cell_size, cell_size, cell_size)
+                            pygame.draw.rect(screen, grass_color, grass_rect)
+    def draw_score(self):
+        score_text = str(len(self.snake.body) - 3)
+        score_surface = game_font.render(score_text, True, (1,1,1))
+        score_x = int(cell_size * cell_number - 60)
+        score_y = int(cell_size * cell_number - 40)
+        score_rect = score_surface.get_rect(center = (score_x, score_y))
+        apple_rect = apple.get_rect(midright = (score_rect.left, score_rect.centery))
+        bg_rect = pygame.Rect(apple_rect.left, apple_rect.top, apple_rect.width + apple_rect.width, apple_rect.height)
+
+        pygame.draw.rect(screen, (255,255,255), bg_rect)
+        screen.blit(score_surface, score_rect)
+        screen.blit(apple, apple_rect)
+        pygame.draw.rect(screen, (1, 1, 1), bg_rect, 2)
+
 
 # Initialise pygame
 pygame.init()
@@ -154,6 +194,9 @@ clock = pygame.time.Clock()
 # .convert_alpha() converts image to something pygame works with more easily.
 apple = pygame.image.load('Graphics/apple1.png').convert_alpha()
 apple = pygame.transform.scale(apple, (cell_size, cell_size))
+# Can add font by importing a ttf file instead of None, it is as a string
+game_font = pygame.font.Font(None, 32)
+
 
 # Creating an event to update the screen
 SCREEN_UPDATE = pygame.USEREVENT
