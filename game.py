@@ -1,18 +1,80 @@
 import pygame, sys, random
 from pygame.math import Vector2
 
+
+def load_resize_sprite(name):
+    path = f'extracted_sprites/{name}'
+    return pygame.transform.scale(pygame.image.load(path).convert_alpha(), (cell_size, cell_size))
+
 class SNAKE:
     def __init__(self):
         self.body = [Vector2(5,10),Vector2(4,10), Vector2(3,10)]
         self.direction = Vector2(1,0)
         self.new_block = False
 
+        self.head_up = load_resize_sprite('head_up.png')
+        self.head_down = load_resize_sprite('head_down.png')
+        self.head_right = load_resize_sprite('head_right.png')
+        self.head_left = load_resize_sprite('head_left.png')
+
+        self.tail_up = load_resize_sprite('tail_up.png')
+        self.tail_down = load_resize_sprite('tail_down.png')
+        self.tail_right = load_resize_sprite('tail_right.png')
+        self.tail_left = load_resize_sprite('tail_left.png')
+
+        self.body_vertical = load_resize_sprite('body_vertical.png')
+        self.body_horizontal = load_resize_sprite('body_horizontal.png')
+
+        self.body_tr = load_resize_sprite('tr.png')
+        self.body_tl = load_resize_sprite('tl.png')
+        self.body_bl = load_resize_sprite('bl.png')
+        self.body_br = load_resize_sprite('br.png')
+
     def draw_snake(self):
-        for block in self.body:
+        self.update_head_graphics()
+        self.update_tail_graphics()
+
+        for index, block in enumerate(self.body):
             x_pos = block.x * cell_size
             y_pos = block.y * cell_size
             block_rect = pygame.Rect(x_pos, y_pos, cell_size, cell_size)
-            pygame.draw.rect(screen, (183, 111, 122), block_rect)
+
+            if index == 0:
+                screen.blit(self.head, block_rect)
+            elif index == len(self.body) - 1:
+                screen.blit(self.tail, block_rect)
+            else:
+                previous_block = self.body[index + 1] - block
+                next_block = self.body[index -1] - block
+                if previous_block.x == next_block.x:
+                    screen.blit(self.body_vertical, block_rect)
+                elif previous_block.y == next_block.y:
+                    screen.blit(self.body_horizontal, block_rect)
+                else:
+                    if previous_block.x == -1 and next_block.y == -1 or previous_block.y == -1 and next_block.x == -1:
+                        screen.blit(self.body_br, block_rect)
+                    elif previous_block.x == -1 and next_block.y == 1 or previous_block.y == 1 and next_block.x == -1:
+                        screen.blit(self.body_tr, block_rect)
+                    elif previous_block.x == 1 and next_block.y == -1 or previous_block.y == -1 and next_block.x == 1:
+                        screen.blit(self.body_bl, block_rect)
+                    elif previous_block.x == 1 and next_block.y == 1 or previous_block.y == 1 and next_block.x == 1:
+                        screen.blit(self.body_tl, block_rect)
+
+
+    def update_tail_graphics(self):
+        tail_relation = self.body[-2] - self.body[-1]
+        if   tail_relation == Vector2(1,0): self.tail = self.tail_left
+        elif tail_relation == Vector2(-1, 0): self.tail = self.tail_right
+        elif tail_relation == Vector2(0, 1): self.tail = self.tail_up
+        elif tail_relation == Vector2(0, -1): self.tail = self.tail_down
+
+    def update_head_graphics(self):
+        head_relation = self.body[1] - self.body[0]
+        if   head_relation == Vector2(1,0): self.head = self.head_left
+        elif head_relation == Vector2(-1, 0): self.head = self.head_right
+        elif head_relation == Vector2(0, 1): self.head = self.head_up
+        elif head_relation == Vector2(0, -1): self.head = self.head_down
+
 
     def move_snake(self):
         if self.new_block:
@@ -146,7 +208,4 @@ while True:
     pygame.display.update()
     # Limit fps to 60fps
     clock.tick(60)
-
-
-
 
