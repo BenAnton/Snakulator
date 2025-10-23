@@ -6,6 +6,9 @@ def load_resize_sprite(name):
     path = f'extracted_sprites/{name}'
     return pygame.transform.scale(pygame.image.load(path).convert_alpha(), (cell_size, cell_size))
 
+def get_random_number():
+    return random.randint(1, 10)
+
 class SNAKE:
     def __init__(self):
         self.body = [Vector2(5,10),Vector2(4,10), Vector2(3,10)]
@@ -102,7 +105,9 @@ class SNAKE:
         self.direction = Vector2(0, 0)
 
 class FRUIT:
-    def __init__(self):
+    def __init__(self, answer):
+        self.pos = pygame.math.Vector2(random.randint(0, cell_number - 1), random.randint(0, cell_number - 1))
+        self.answer = answer
         self.randomize()
 
     def draw_fruit(self):
@@ -110,10 +115,11 @@ class FRUIT:
         fruit_rect = pygame.Rect(self.pos.x * cell_size, self.pos.y * cell_size, cell_size, cell_size)
         # pygame.draw.rect(screen, (126, 166, 114), fruit_rect)
         screen.blit(apple, fruit_rect)
-        number_surface = game_font_small.render(str(99), True, (255, 255, 255))
+        number_surface = game_font_small.render(str(self.answer), True, (255, 255, 255))
         number_rect = number_surface.get_rect(center=fruit_rect.center)
         number_rect.y += 5
         screen.blit(number_surface, number_rect)
+
 
 
     def randomize(self):
@@ -121,12 +127,38 @@ class FRUIT:
         self.y = random.randint(0, cell_number -1)
         self.pos = Vector2(self.x, self.y)
 
+class QUESTIONS:
+    def __init__(self):
+        self.new_question()
+
+    def new_question(self):
+        self.a = get_random_number()
+        self.b = get_random_number()
+        self.text = f"{self.a} + {self.b} = ?"
+        self.answer = self.a + self.b
+
+    def draw_question(self):
+        question_surface = game_font.render(self.text, True, (255, 255, 255))
+        question_x = window_width - 260
+        question_y = 850
+        question_rect = question_surface.get_rect(center=(question_x, question_y))
+        bg_rect = pygame.Rect(question_rect.left - 10, question_rect.top - 5, question_rect.width + 20,
+                              question_rect.height + 10)
+        pygame.draw.rect(window, (0, 0, 0), bg_rect)
+        pygame.draw.rect(window, (255, 255, 255), bg_rect, 2)
+        window.blit(question_surface, question_rect)
 
 
 class MAIN:
     def __init__(self):
         self.snake = SNAKE()
-        self.fruit = FRUIT()
+        self.question = QUESTIONS()
+        self.correct_fruit = FRUIT(self.question.answer)
+
+        wrong_answer = self.question.answer
+        while wrong_answer == self.question.answer:
+            wrong_answer = random.randint(2, 20)
+        self.bad_fruit = FRUIT(wrong_answer)
 
     def update(self):
         self.snake.move_snake()
@@ -136,17 +168,19 @@ class MAIN:
     def draw_elements(self):
         self.draw_grass()
         self.snake.draw_snake()
-        self.fruit.draw_fruit()
+        self.correct_fruit.draw_fruit()
+        self.bad_fruit.draw_fruit()
         self.draw_score()
+        self.question.draw_question()
 
     def check_collision(self):
-        if self.fruit.pos == self.snake.body[0]:
-            self.fruit.randomize()
+        if self.correct_fruit.pos == self.snake.body[0]:
+            self.correct_fruit.randomize()
             self.snake.add_block()
 
         for block in self.snake.body[1:]:
-            if block == self.fruit.pos:
-                self.fruit.randomize()
+            if block == self.correct_fruit.pos:
+                self.correct_fruit.randomize()
 
     def check_fail(self):
         if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
@@ -169,17 +203,20 @@ class MAIN:
                             pygame.draw.rect(screen, grass_color, grass_rect)
     def draw_score(self):
         score_text = str(len(self.snake.body) - 3)
-        score_surface = game_font.render(score_text, True, (1,1,1))
-        score_x = int(cell_size * cell_number - 60)
-        score_y = int(cell_size * cell_number - 40)
+        score_surface = game_font.render(score_text, True, (255,255,255))
+        score_x = window_width - 60
+        score_y = 850
         score_rect = score_surface.get_rect(center = (score_x, score_y))
         apple_rect = apple.get_rect(midright = (score_rect.left, score_rect.centery))
         bg_rect = pygame.Rect(apple_rect.left, apple_rect.top, apple_rect.width + apple_rect.width, apple_rect.height)
 
-        pygame.draw.rect(screen, (255,255,255), bg_rect)
-        screen.blit(score_surface, score_rect)
-        screen.blit(apple, apple_rect)
-        pygame.draw.rect(screen, (1, 1, 1), bg_rect, 2)
+        pygame.draw.rect(window, (0,0,0), bg_rect)
+        pygame.draw.rect(window, (255,255,255), bg_rect, 2)
+        # screen.blit(score_surface, score_rect)
+        window.blit(apple, apple_rect)
+        window.blit(score_surface, score_rect)
+
+
 
 
 # Initialise pygame
@@ -187,8 +224,14 @@ pygame.init()
 cell_size = 40
 cell_number = 20
 paused = False
-# Set the screen size
-screen = pygame.display.set_mode((cell_size * cell_number, cell_size * cell_number))
+
+#  Set the window size (900 * 800
+window_width, window_height = 800, 900
+window = pygame.display.set_mode((window_width, window_height))
+# Set the screen size (this would be: 800 * 800)
+screen = pygame.Surface((cell_size * cell_number, cell_size * cell_number))
+
+
 # New clock object for limiting fps
 clock = pygame.time.Clock()
 # .convert_alpha() converts image to something pygame works with more easily.
@@ -243,6 +286,9 @@ while True:
             if event.key == pygame.K_SPACE:
                 paused = not paused
 
+
+    window.fill((30,30,30))
+    window.blit(screen, (0,0))
     # Change color of surface
     screen.fill((175, 215, 70))
 
