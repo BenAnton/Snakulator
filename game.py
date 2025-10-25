@@ -80,6 +80,9 @@ class SNAKE:
 
 
     def move_snake(self):
+        if self.direction == Vector2(0,0):
+            return
+
         if self.new_block:
             # Create copy of snake including last index
             body_copy = self.body[:]
@@ -99,6 +102,13 @@ class SNAKE:
 
     def add_block(self):
         self.new_block = True
+
+    def remove_block(self):
+        if len(self.body) > 3:
+            self.body.pop()
+            return False
+        else:
+            return True
 
     def reset(self):
         self.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
@@ -129,7 +139,15 @@ class FRUIT:
 
 class QUESTIONS:
     def __init__(self):
+        self.status = None
+        self.status_color = None
+        self.status_timer = 0
         self.new_question()
+
+    def set_status(self, text, color):
+        self.status = text
+        self.status_color = color
+        self.status_timer = pygame.time.get_ticks()
 
     def new_question(self):
         self.a = get_random_number()
@@ -139,7 +157,7 @@ class QUESTIONS:
 
     def draw_question(self):
         question_surface = game_font.render(self.text, True, (255, 255, 255))
-        question_x = window_width - 260
+        question_x = window_width - 725
         question_y = 850
         question_rect = question_surface.get_rect(center=(question_x, question_y))
         bg_rect = pygame.Rect(question_rect.left - 10, question_rect.top - 5, question_rect.width + 20,
@@ -147,6 +165,24 @@ class QUESTIONS:
         pygame.draw.rect(window, (0, 0, 0), bg_rect)
         pygame.draw.rect(window, (255, 255, 255), bg_rect, 2)
         window.blit(question_surface, question_rect)
+
+    def draw_status(self):
+        if self.status and pygame.time.get_ticks() - self.status_timer > 1500:
+            self.status = None
+            self.status_color = None
+            return
+
+        if not self.status:
+            return
+
+        status_surface = game_font.render(self.status, True, self.status_color)
+        status_x = window_width - 400
+        status_y = 850
+        status_rect = status_surface.get_rect(center=(status_x, status_y))
+        bg_rect = pygame.Rect(status_rect.left - 10, status_rect.top - 5, status_rect.width + 20, status_rect.height + 10)
+        pygame.draw.rect(window, (0, 0, 0), bg_rect)
+        pygame.draw.rect(window, (255, 255, 255), bg_rect, 2)
+        window.blit(status_surface, status_rect)
 
 
 class MAIN:
@@ -172,17 +208,40 @@ class MAIN:
         self.bad_fruit.draw_fruit()
         self.draw_score()
         self.question.draw_question()
+        self.question.draw_status()
 
     def check_collision(self):
-        if self.correct_fruit.pos == self.snake.body[0]:
-            self.correct_fruit.randomize()
-            self.snake.add_block()
+        head = self.snake.body[0]
 
-        for block in self.snake.body[1:]:
-            if block == self.correct_fruit.pos:
-                self.correct_fruit.randomize()
+        if head == self.correct_fruit.pos:
+            self.snake.add_block()
+            self.question.set_status("Correct! +1 Length", (0, 255, 0))
+            self.question.new_question()
+
+            self.correct_fruit = FRUIT(self.question.answer)
+            wrong_answer = self.question.answer
+            while wrong_answer == self.question.answer:
+                wrong_answer = random.randint(2, 20)
+            self.bad_fruit = FRUIT(wrong_answer)
+
+        elif head == self.bad_fruit.pos:
+            game_over = self.snake.remove_block()
+            if game_over:
+                self.game_over()
+            else:
+                self.question.set_status("Wrong! -1 Length", (255, 0, 0))
+                self.question.new_question()
+                self.correct_fruit = FRUIT(self.question.answer)
+                wrong_answer = self.question.answer
+                while wrong_answer == self.question.answer:
+                    wrong_answer = random.randint(2, 20)
+                self.bad_fruit = FRUIT(wrong_answer)
+
 
     def check_fail(self):
+        if self.snake.direction == Vector2(0, 0):
+            return
+
         if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
             self.game_over()
 
@@ -192,6 +251,7 @@ class MAIN:
 
     def game_over(self):
         self.snake.reset()
+        self.question.set_status("Game Over!", (255, 165, 0))
 
     def draw_grass(self):
         grass_color = (155, 195, 50)
